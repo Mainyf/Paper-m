@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mainyf <3080574183@qq.com>
+Date: Fri, 30 Jul 2021 15:31:04 +0800
+Subject: [PATCH] add villager find path tick limit
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityVillager.java b/src/main/java/net/minecraft/server/EntityVillager.java
+index de9ea6770b8afc5e1020bef04ac6cca93b6b420c..26774f8e8d42cddb402095a8148b1274674f4c2c 100644
+--- a/src/main/java/net/minecraft/server/EntityVillager.java
++++ b/src/main/java/net/minecraft/server/EntityVillager.java
+@@ -162,11 +162,27 @@ public class EntityVillager extends EntityVillagerAbstract implements Reputation
+     }
+     // Spigot End
+ 
++    // Mainyf Start
++    private long prevTick = world.spigotConfig.intervalTickVillagersValue;
++    // Mainyf End
++
+     @Override
+     protected void mobTick() { mobTick(false); }
+     protected void mobTick(boolean inactive) {
+         this.world.getMethodProfiler().enter("villagerBrain");
+-        if (!inactive) this.getBehaviorController().a((WorldServer) this.world, this); // CraftBukkit - decompile error // Paper
++        // if (!inactive) this.getBehaviorController().a((WorldServer) this.world, this); // CraftBukkit - decompile error // Paper
++        // Mainyf Start
++        if (!inactive) {
++            if (!world.spigotConfig.intervalTickVillagers) {
++                this.getBehaviorController().a((WorldServer) this.world, this);
++            } else if (prevTick >= world.spigotConfig.intervalTickVillagersValue) {
++                this.getBehaviorController().a((WorldServer) this.world, this);
++                prevTick = 0;
++            } else {
++                prevTick++;
++            }
++        }
++        // Mainyf End
+         this.world.getMethodProfiler().exit();
+         if (this.bF) {
+             this.bF = false;
+diff --git a/src/main/java/org/spigotmc/SpigotWorldConfig.java b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+index 61ad08b09cd2fe25471bb6c838b8bb3d8102e693..bcb2289c675490fe5376ad7b0cd789845628d2b1 100644
+--- a/src/main/java/org/spigotmc/SpigotWorldConfig.java
++++ b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+@@ -201,6 +201,10 @@ public class SpigotWorldConfig
+     public boolean villagersActiveForPanic = true;
+     // Paper end
+     public boolean tickInactiveVillagers = true;
++
++    public boolean intervalTickVillagers = true;
++    public int intervalTickVillagersValue = 20;
++
+     private void activationRange()
+     {
+         boolean hasAnimalsConfig = config.getInt("entity-activation-range.animals", animalActivationRange) != animalActivationRange; // Paper
+@@ -234,6 +238,10 @@ public class SpigotWorldConfig
+         villagersActiveForPanic = getBoolean( "entity-activation-range.villagers-active-for-panic", villagersActiveForPanic );
+         // Paper end
+         tickInactiveVillagers = getBoolean( "entity-activation-range.tick-inactive-villagers", tickInactiveVillagers );
++
++        intervalTickVillagers = getBoolean("entity-activation-range.interval-tick-villagers", intervalTickVillagers);
++        intervalTickVillagersValue = getInt("entity-activation-range.interval-tick-villagers-value", 20);
++
+         log( "Entity Activation Range: An " + animalActivationRange + " / Mo " + monsterActivationRange + " / Ra " + raiderActivationRange + " / Mi " + miscActivationRange + " / Tiv " + tickInactiveVillagers );
+     }
+ 
